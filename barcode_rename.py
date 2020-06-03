@@ -72,7 +72,7 @@ def main():
 
   if len(arr_ont_barcodes) == len(arr_qbic_barcodes):
     while True:
-      print "The following barcode(s) will be replaced under the folder " + directory + "{fastq_pass, fastq_fail, fast5_pass, fast5_fail}:\n" 
+      print "The following barcode(s) will be replaced in the subfolders " + directory + "{fastq_pass, fastq_fail, fast5_pass, fast5_fail}:\n" 
       print guideline_replace_barcodes(arr_ont_barcodes, arr_qbic_barcodes)
       print "All other files will be moved into /unclassified directory."
       if (yes_or_no("Are you sure? (y/n)")):
