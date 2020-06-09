@@ -1,11 +1,12 @@
 #!/usr/bin/python
 
-import os, sys, getopt, shutil, glob, argparse
+import os
 import sys
 import getopt
 import shutil
 import glob
 import argparse
+import csv
 
 def get_arguments():
   parser = argparse.ArgumentParser(description = "",
@@ -13,20 +14,18 @@ def get_arguments():
   main_group = parser.add_argument_group('Main options')
   main_group.add_argument("-d", "--directory", required = True,
                           help = "The diretory to the project.")
-  main_group.add_argument("-o", "--ont_barcodes", required = True,
-                          help = "The ONT barcodes which will be replaced.")
-  main_group.add_argument("-q", "--qbic_barcodes", required = True,
-                          help = "The QBIC barcodes which will replace the ONT barcodes.")
+  main_group.add_argument("-c", "--csv", required = True,
+                          help = "The CSV file.")
   main_group.add_argument("-h", "--help", action = "help", default = argparse.SUPPRESS,
                           help = "Show this help message and exit")
   args = parser.parse_args()
   return args
 
-#show the guideline before run the command
+#show the short guideline before run the command
 def guideline_replace_barcodes(arr_old_barcodes, arr_new_barcodes):
   s = ""
   for old_barcode, new_barcode in zip(arr_old_barcodes, arr_new_barcodes):
-    s = s + "barcode" + str(old_barcode).zfill(2) + " -> " + new_barcode + "\n" 
+    s = s + old_barcode + " -> " + new_barcode + "\n" 
   return s
 
 #user input to confirm the run
@@ -45,9 +44,8 @@ def check_directory_exists(arr_path_ont_barcodes):
   check_result = 1
   for path in arr_path_ont_barcodes:
     if os.path.isdir(path) == False:
-      print "Directory " + path + " not exists."
+      print "Directory " + path + " not exists.\n"
       check_result = 0
-      break
   return check_result
 
 #get full path to barcodes
@@ -55,7 +53,7 @@ def get_full_path_to_barcodes(arr_path_headers, arr_ont_barcodes):
   arr_path_ont_barcodes = [] 
   for path in arr_path_headers:
     for barcode in arr_ont_barcodes:
-      arr_path_ont_barcodes.append(path + "/barcode" + str(barcode).zfill(2))
+      arr_path_ont_barcodes.append(path + '/' + barcode)
   return arr_path_ont_barcodes
 
 #get full path to headers
@@ -67,14 +65,27 @@ def get_full_path_to_headers(directory, arr_directory_headers):
 
 def main():
   args = get_arguments()
+  #check if the projecjt directory correct
   if os.path.isdir(args.directory) == True:
     directory = args.directory
   else:
     print "Directory: " + args.directory + " not exists."
     sys.exit(1)
-  arr_ont_barcodes = args.ont_barcodes.split(',')
-  arr_qbic_barcodes = args.qbic_barcodes.split(',')
+  #check if the CSV file path correct
+  if os.path.isfile(args.csv) == True:
+    csv_file = args.csv
+  else:
+    print "CSV file: " + args.csv + " not exists."
+    sys.exit(1)
 
+  arr_ont_barcodes = []
+  arr_qbic_barcodes = []   
+  with open(csv_file) as f:
+    spamreader = csv.reader(f, delimiter = ',')
+    for row in spamreader:
+      arr_ont_barcodes.append(row[0])
+      arr_qbic_barcodes.append(row[1])
+ 
   if len(arr_ont_barcodes) == len(arr_qbic_barcodes):
     while True:
       print "The following barcode(s) will be replaced in the subfolders " + directory + "{fastq_pass, fastq_fail, fast5_pass, fast5_fail}:\n" 
@@ -96,9 +107,9 @@ def main():
       for old_barcode,new_barcode in zip(arr_ont_barcodes, arr_qbic_barcodes):
         for path in arr_path_headers:
           try:
-            os.rename(path + "/barcode" + str(old_barcode).zfill(2), path + '/' + new_barcode)
+            os.rename(path + '/' + old_barcode, path + '/' + new_barcode)
           except:
-            print "Can not rename the folder: " + path + "/barcode" + str(old_barcode).zfill(2), path + '/' + new_barcode
+            print "Can not rename the folder: " + path + '/' + old_barcode, path + '/' + new_barcode
             sys.exit(1)
       #move files to unclassified
       for path in arr_path_headers:
